@@ -1,0 +1,76 @@
+
+### checking the overlap between all files 
+
+# Supondo que você tem uma lista com SNPs de cada chip
+# Exemplo:
+# snps_list <- list(
+#   PSYchip = read.table("ADHD-PSY-IDS-SEX-PHENO_onlycontrols_envio.bim")$V2,
+#   GSA1    = read.table("ADHD-GSA1-IDS-SEX-PHENO_onlycontrols_envio.bim")$V2,
+#   GSA2    = read.table("GSP_2022_onlycontrols_envio.bim")$V2,
+#   Smokescreen = read.table("Smokescreen_NIDA_Study60_Grassi_clean_ID-clinico_rsID_onlyCNB_envio.bim")$V2
+# )
+
+# Função que conta SNPs em comum
+pairwise_overlap <- function(a, b) {
+  length(intersect(snps_list[[a]], snps_list[[b]]))
+}
+
+# Criar matriz de overlaps
+chips <- names(snps_list)
+overlap_matrix <- matrix(NA, nrow=length(chips), ncol=length(chips),
+                         dimnames=list(chips, chips))
+
+for(i in seq_along(chips)) {
+  for(j in seq_along(chips)) {
+    if(i == j) {
+      overlap_matrix[i,j] <- length(snps_list[[chips[i]]]) # diagonal = total
+    } else {
+      overlap_matrix[i,j] <- pairwise_overlap(chips[i], chips[j])
+    }
+  }
+}
+
+#####overlap_matrix
+
+#            PSYchip   GSA1   GSA2 Smokescreen
+# PSYchip      574150 106038 107511       32483
+# GSA1         106038 688032 661157       42735
+# GSA2         107511 661157 730059       44952
+# Smokescreen   32483  42735  44952      532839
+
+## Quality Control 
+
+# Seting datasets
+PSYchip="ADHD-PSY-IDS-SEX-PHENO_onlycontrols_envio"
+GSA1="ADHD-GSA1-IDS-SEX-PHENO_onlycontrols_envio"
+GSA2="GSP_2022_onlycontrols_envio"
+Smokescreen="Smokescreen_NIDA_Study60_Grassi_clean_ID-clinico_rsID_onlyCNB_envio"
+
+################### SNV filter - testing maf 0.01 0.05 e 0.005 ###################
+# PSYchip
+# bim inicial = 574150 SNVs
+plink --bfile "$PSYchip" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.01
+# SNVs = X
+plink --bfile "$PSYchip" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.05
+plink --bfile "$PSYchip" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.005
+
+# GSA1
+# bim inicial = 688032 SNVs
+plink --bfile "$GSA1" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA1/"$GSA1"_QC0.01
+plink --bfile "$GSA1" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA1/"$GSA1"_QC0.05
+plink --bfile "$GSA1" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA1/"$GSA1"_QC0.005
+
+# GSA2
+# bim inicial = 730059 SNVs
+plink --bfile "$GSA2" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA2/"$GSA2"_QC0.01
+plink --bfile "$GSA2" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA2/"$GSA2"_QC0.05
+plink --bfile "$GSA2" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA2/"$GSA2"_QC0.005
+
+# Smokescreen
+# bim inicial = 532839 SNVs
+plink --bfile "$Smokescreen" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC0.01
+plink --bfile "$Smokescreen" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC0.05
+plink --bfile "$Smokescreen" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC0.005
+
+################### Sample Filter ###################
+plink --bfile "$genotyped_data"_QC --mind 0.02 --make-bed --out "$genotyped_data"_QC_mind
