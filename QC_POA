@@ -50,27 +50,39 @@ Smokescreen="Smokescreen_NIDA_Study60_Grassi_clean_ID-clinico_rsID_onlyCNB_envio
 # PSYchip
 # bim inicial = 574150 SNVs
 plink --bfile "$PSYchip" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.01
-# SNVs = X
+# SNVs = 309186
 plink --bfile "$PSYchip" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.05
+# SNVs = 273610
 plink --bfile "$PSYchip" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.005
+# SNVs = 320919
 
 # GSA1
 # bim inicial = 688032 SNVs
 plink --bfile "$GSA1" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA1/"$GSA1"_QC0.01
+# SNVs = 482116
 plink --bfile "$GSA1" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA1/"$GSA1"_QC0.05
+# SNVs = 295870
 plink --bfile "$GSA1" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA1/"$GSA1"_QC0.005
+# SNVs = 515468
 
 # GSA2
 # bim inicial = 730059 SNVs
 plink --bfile "$GSA2" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA2/"$GSA2"_QC0.01
+# SNVs = 482813
 plink --bfile "$GSA2" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA2/"$GSA2"_QC0.05
+# SNVs = 294072
 plink --bfile "$GSA2" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/GSA2/"$GSA2"_QC0.005
+# SNVs = 515287
 
 # Smokescreen
 # bim inicial = 532839 SNVs
 plink --bfile "$Smokescreen" --maf 0.01 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC0.01
+# SNVs = 419132
 plink --bfile "$Smokescreen" --maf 0.05 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC0.05
+# SNVs = 336866
 plink --bfile "$Smokescreen" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC0.005
+# SNVs = 443128
+
 
 ################### Sample Filter ###################
 
