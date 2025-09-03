@@ -1,8 +1,6 @@
 
 ### checking the overlap between all files 
 
-# Supondo que você tem uma lista com SNPs de cada chip
-# Exemplo:
 # snps_list <- list(
 #   PSYchip = read.table("ADHD-PSY-IDS-SEX-PHENO_onlycontrols_envio.bim")$V2,
 #   GSA1    = read.table("ADHD-GSA1-IDS-SEX-PHENO_onlycontrols_envio.bim")$V2,
@@ -87,22 +85,308 @@ plink --bfile "$Smokescreen" --maf 0.005 --geno 0.02 --hwe 1e-10  --make-bed --o
 ################### Sample Filter ###################
 
 # PSYchip
-plink --bfile ./QC/PSYchip/"$PSYchip"_QC0.01 --mind 0.02 --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.01_mind
-plink --bfile ./QC/PSYchip/"$PSYchip"_QC0.05 --mind 0.02 --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.05_mind
-plink --bfile ./QC/PSYchip/"$PSYchip"_QC0.005 --mind 0.02 --make-bed --out ./QC/PSYchip/"$PSYchip"_QC0.005_mind
+plink --bfile ./QC/PSYchip/"$PSYchip"_QC0.01 --mind 0.02 --make-bed --out ./QC/PSYchip/"$PSYchip"_QC_mind
 
 # GSA1
-plink --bfile ./QC/PSYchip/"$GSA1"_QC0.01 --mind 0.02 --make-bed --out ./QC/PSYchip/"$GSA1"_QC0.01_mind
-plink --bfile ./QC/PSYchip/"$GSA1"_QC0.05 --mind 0.02 --make-bed --out ./QC/PSYchip/"$GSA1"_QC0.05_mind
-plink --bfile ./QC/PSYchip/"$GSA1"_QC0.005 --mind 0.02 --make-bed --out ./QC/PSYchip/"$GSA1"_QC0.005_mind
+plink --bfile ./QC/GSA1/"$GSA1"_QC0.01 --mind 0.02 --make-bed --out ./QC/GSA1/"$GSA1"_QC_mind
 
 # GSA2
-plink --bfile ./QC/PSYchip/"$GSA2"_QC0.01 --mind 0.02 --make-bed --out ./QC/PSYchip/"$GSA2"_QC0.01_mind
-plink --bfile ./QC/PSYchip/"$GSA2"_QC0.05 --mind 0.02 --make-bed --out ./QC/PSYchip/"$GSA2"_QC0.05_mind
-plink --bfile ./QC/PSYchip/"$GSA2"_QC0.005 --mind 0.02 --make-bed --out ./QC/PSYchip/"$GSA2"_QC0.005_mind
+plink --bfile ./QC/GSA2/"$GSA2"_QC0.01 --mind 0.02 --make-bed --out ./QC/GSA2/"$GSA2"_QC_mind
 
 # Smokescreen
-plink --bfile ./QC/PSYchip/"$Smokescreen"_QC0.01 --mind 0.02 --make-bed --out ./QC/PSYchip/"$Smokescreen"_QC0.01_mind
-plink --bfile ./QC/PSYchip/"$Smokescreen"_QC0.05 --mind 0.02 --make-bed --out ./QC/PSYchip/"$Smokescreen"_QC0.05_mind
-plink --bfile ./QC/PSYchip/"$Smokescreen"_QC0.005 --mind 0.02 --make-bed --out ./QC/PSYchip/"$Smokescreen"_QC0.005_mind
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_QC0.01 --mind 0.02 --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC_mind
+
+############### Keep only ATGC SNVs ##################
+
+# PSYchip
+plink --bfile ./QC/PSYchip/"$PSYchip"_QC_mind --snps-only just-acgt --make-bed --out ./QC/PSYchip/"$PSYchip"_QC_mind_ACTG
+
+# GSA1
+plink --bfile ./QC/GSA1/"$GSA1"_QC_mind --snps-only just-acgt --make-bed --out ./QC/GSA1/"$GSA1"_QC_mind_ACTG
+
+# GSA2
+plink --bfile ./QC/GSA2/"$GSA2"_QC_mind --snps-only just-acgt --make-bed --out ./QC/GSA2/"$GSA2"_QC_mind_ACTG
+
+# Smokescreen
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_QC_mind --mind 0.02 --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QC_mind_ACTG
+
+############## Ident by Descendent ###################
+
+# PSYchip
+plink --bfile ./QC/PSYchip/"$PSYchip"_QC_mind_ACTG --genome --min 0.2 --make-bed --out ./QC/PSYchip/ibd_calculation
+
+# GSA1
+plink --bfile ./QC/GSA1/"$GSA1"_QC_mind_ACTG --genome --min 0.2 --make-bed --out ./QC/GSA1/ibd_calculation
+
+# GSA2
+plink --bfile ./QC/GSA2/"$GSA2"_QC_mind_ACTG --genome --min 0.2 --make-bed --out ./QC/GSA2/ibd_calculation
+
+# Smokescreen
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_QC_mind_ACTG --genome --min 0.2 --make-bed --out ./QC/Smokescreen/ibd_calculation
+
+########### Heterozigosity and missingness filter #############
+plink --bfile "$genotyped_data"_QC_mind_ACTG --missing --out indiv_missing
+plink --bfile "$genotyped_data"_QC_mind_ACTG --het --out hetero
+imiss_rem <- subset(imiss, imiss$F_MISS > 0.03)[, 1:2]
+het_rem <- subset(het, het$P_HET > upper_3sd | het$P_HET < lower_3sd)[, 1:2] 
+plink --bfile "$genotyped_data"_QC_mind_ACTG --remove fail-imisshet-qc.txt --make-bed --out "$genotyped_data"_semhet
+
+
+
+# PSYchip
+
+plink --bfile ./QC/PSYchip/"$PSYchip"_QC_mind_ACTG --missing --out ./QC/PSYchip/indiv_missing
+plink --bfile ./QC/PSYchip/"$PSYchip"_QC_mind_ACTG --het --out ./QC/PSYchip/hetero
+
+#R
+imiss <-  read.table("./QC/PSYchip/indiv_missing.imiss", header=TRUE)
+het <- read.table("./QC/PSYchip/hetero.het", header=TRUE)
+
+# Calculate the proportion of heterozygosity
+het$P_HET <- (het$N.NM. - het$O.HOM.) / het$N.NM.
+
+# Define thresholds for heterozygosity based on 3 standard deviations
+upper_3sd <- mean(het$P_HET) + 3 * sd(het$P_HET)
+lower_3sd <- mean(het$P_HET) - 3 * sd(het$P_HET)
+
+# Generate a plot of missing genotypes vs heterozygosity
+pdf('./QC/PSYchip/imiss-vs-het.pdf')
+plot(
+  log10(imiss$F_MISS), het$P_HET,
+  xlab = 'log10(Proportion of missing genotypes)',
+  ylab = 'Proportion Heterozygous',
+  xlim = c(-4, 0), ylim = c(0, 0.5)
+)
+axis(side = 1, labels = FALSE)
+mtext(c(-4, -3, -2, -1, 0), side = 1, at = c(-4, -3, -2, -1, 0), line = 1)
+abline(h = upper_3sd, col = 'red', lty = 2)  # Upper threshold
+abline(h = lower_3sd, col = 'red', lty = 2)  # Lower threshold
+abline(v = log10(0.03), col = 'red', lty = 2)  # Missingness threshold
+dev.off()
+
+# Identify individuals to remove based on thresholds
+imiss_rem <- subset(imiss, imiss$F_MISS > 0.03)[, 1:2]  # Individuals with high missingness
+het_rem <- subset(het, het$P_HET > upper_3sd | het$P_HET < lower_3sd)[, 1:2]  # Outliers in heterozygosity
+
+# Combine individuals to remove into a single list
+indiv_rem <- rbind(imiss_rem, het_rem)
+
+# Save the list of individuals to remove
+write.table(
+  indiv_rem, './QC/PSYchip/fail-imisshet-qc.txt',
+  col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t'
+)
+
+## bash
+plink --bfile ./QC/PSYchip/"$PSYchip"_QC_mind_ACTG --remove ./QC/PSYchip/fail-imisshet-qc.txt --make-bed --out ./QC/PSYchip/"$PSYchip"_semhet
+
+# GSA1
+
+plink --bfile ./QC/GSA1/"$GSA1"_QC_mind_ACTG --missing --out ./QC/GSA1/indiv_missing
+plink --bfile ./QC/GSA1/"$GSA1"_QC_mind_ACTG --het --out ./QC/GSA1/hetero
+#R
+imiss <-  read.table("./QC/GSA1/indiv_missing.imiss", header=TRUE)
+het <- read.table("./QC/GSA1/hetero.het", header=TRUE)
+
+# Calculate the proportion of heterozygosity
+het$P_HET <- (het$N.NM. - het$O.HOM.) / het$N.NM.
+
+# Define thresholds for heterozygosity based on 3 standard deviations
+upper_3sd <- mean(het$P_HET) + 3 * sd(het$P_HET)
+lower_3sd <- mean(het$P_HET) - 3 * sd(het$P_HET)
+
+# Generate a plot of missing genotypes vs heterozygosity
+pdf('./QC/GSA1/imiss-vs-het.pdf')
+plot(
+  log10(imiss$F_MISS), het$P_HET,
+  xlab = 'log10(Proportion of missing genotypes)',
+  ylab = 'Proportion Heterozygous',
+  xlim = c(-4, 0), ylim = c(0, 0.5)
+)
+axis(side = 1, labels = FALSE)
+mtext(c(-4, -3, -2, -1, 0), side = 1, at = c(-4, -3, -2, -1, 0), line = 1)
+abline(h = upper_3sd, col = 'red', lty = 2)  # Upper threshold
+abline(h = lower_3sd, col = 'red', lty = 2)  # Lower threshold
+abline(v = log10(0.03), col = 'red', lty = 2)  # Missingness threshold
+dev.off()
+
+# Identify individuals to remove based on thresholds
+imiss_rem <- subset(imiss, imiss$F_MISS > 0.03)[, 1:2]  # Individuals with high missingness
+het_rem <- subset(het, het$P_HET > upper_3sd | het$P_HET < lower_3sd)[, 1:2]  # Outliers in heterozygosity
+
+# Combine individuals to remove into a single list
+indiv_rem <- rbind(imiss_rem, het_rem)
+
+# Save the list of individuals to remove
+write.table(
+  indiv_rem, './QC/GSA1/fail-imisshet-qc.txt',
+  col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t'
+)
+
+## bash
+plink --bfile ./QC/GSA1/"$GSA1"_QC_mind_ACTG --remove ./QC/GSA1/fail-imisshet-qc.txt --make-bed --out ./QC/GSA1/"$GSA1"_semhet
+
+# GSA2
+
+plink --bfile ./QC/GSA2/"$GSA2"_QC_mind_ACTG --missing --out ./QC/GSA2/indiv_missing
+plink --bfile ./QC/GSA2/"$GSA2"_QC_mind_ACTG --het --out ./QC/GSA2/hetero
+#R
+imiss <-  read.table("./QC/GSA2/indiv_missing.imiss", header=TRUE)
+het <- read.table("./QC/GSA2/hetero.het", header=TRUE)
+
+# Calculate the proportion of heterozygosity
+het$P_HET <- (het$N.NM. - het$O.HOM.) / het$N.NM.
+
+# Define thresholds for heterozygosity based on 3 standard deviations
+upper_3sd <- mean(het$P_HET) + 3 * sd(het$P_HET)
+lower_3sd <- mean(het$P_HET) - 3 * sd(het$P_HET)
+
+# Generate a plot of missing genotypes vs heterozygosity
+pdf('./QC/GSA2/imiss-vs-het.pdf')
+plot(
+  log10(imiss$F_MISS), het$P_HET,
+  xlab = 'log10(Proportion of missing genotypes)',
+  ylab = 'Proportion Heterozygous',
+  xlim = c(-4, 0), ylim = c(0, 0.5)
+)
+axis(side = 1, labels = FALSE)
+mtext(c(-4, -3, -2, -1, 0), side = 1, at = c(-4, -3, -2, -1, 0), line = 1)
+abline(h = upper_3sd, col = 'red', lty = 2)  # Upper threshold
+abline(h = lower_3sd, col = 'red', lty = 2)  # Lower threshold
+abline(v = log10(0.03), col = 'red', lty = 2)  # Missingness threshold
+dev.off()
+
+# Identify individuals to remove based on thresholds
+imiss_rem <- subset(imiss, imiss$F_MISS > 0.03)[, 1:2]  # Individuals with high missingness
+het_rem <- subset(het, het$P_HET > upper_3sd | het$P_HET < lower_3sd)[, 1:2]  # Outliers in heterozygosity
+
+# Combine individuals to remove into a single list
+indiv_rem <- rbind(imiss_rem, het_rem)
+
+# Save the list of individuals to remove
+write.table(
+  indiv_rem, './QC/GSA2/fail-imisshet-qc.txt',
+  col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t'
+)
+## bash
+plink --bfile ./QC/GSA2/"$GSA2"_QC_mind_ACTG --remove ./QC/GSA2/fail-imisshet-qc.txt --make-bed --out ./QC/GSA2/"$GSA2"_semhet
+
+# Smokescreen
+
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_QC_mind_ACTG --missing --out ./QC/Smokescreen/indiv_missing
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_QC_mind_ACTG --het --out ./QC/Smokescreen/hetero
+#R
+imiss <-  read.table("./QC/Smokescreen/indiv_missing.imiss", header=TRUE)
+het <- read.table("./QC/Smokescreen/hetero.het", header=TRUE)
+
+# Calculate the proportion of heterozygosity
+het$P_HET <- (het$N.NM. - het$O.HOM.) / het$N.NM.
+
+# Define thresholds for heterozygosity based on 3 standard deviations
+upper_3sd <- mean(het$P_HET) + 3 * sd(het$P_HET)
+lower_3sd <- mean(het$P_HET) - 3 * sd(het$P_HET)
+
+# Generate a plot of missing genotypes vs heterozygosity
+pdf('./QC/Smokescreen/imiss-vs-het.pdf')
+plot(
+  log10(imiss$F_MISS), het$P_HET,
+  xlab = 'log10(Proportion of missing genotypes)',
+  ylab = 'Proportion Heterozygous',
+  xlim = c(-4, 0), ylim = c(0, 0.5)
+)
+axis(side = 1, labels = FALSE)
+mtext(c(-4, -3, -2, -1, 0), side = 1, at = c(-4, -3, -2, -1, 0), line = 1)
+abline(h = upper_3sd, col = 'red', lty = 2)  # Upper threshold
+abline(h = lower_3sd, col = 'red', lty = 2)  # Lower threshold
+abline(v = log10(0.03), col = 'red', lty = 2)  # Missingness threshold
+dev.off()
+
+# Identify individuals to remove based on thresholds
+imiss_rem <- subset(imiss, imiss$F_MISS > 0.03)[, 1:2]  # Individuals with high missingness
+het_rem <- subset(het, het$P_HET > upper_3sd | het$P_HET < lower_3sd)[, 1:2]  # Outliers in heterozygosity
+
+# Combine individuals to remove into a single list
+indiv_rem <- rbind(imiss_rem, het_rem)
+
+# Save the list of individuals to remove
+write.table(
+  indiv_rem, './QC/Smokescreen/fail-imisshet-qc.txt',
+  col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t'
+)
+
+## bash
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_QC_mind_ACTG --remove ./QC/Smokescreen/fail-imisshet-qc.txt --make-bed --out ./QC/Smokescreen/"$Smokescreen"_semhet
+
+###################### SEX CHECK #########################
+# PSYchip
+plink --bfile ./QC/PSYchip/"$PSYchip"_semhet --check-sex --out ./QC/PSYchip/check_XY
+grep PROBLEM ./QC/PSYchip/check_XY.sexcheck | awk '{print $1, $2}' > ./QC/PSYchip/check_sex_fail.txt
+plink --bfile ./QC/PSYchip/"$PSYchip"_semhet --remove ./QC/PSYchip/check_sex_fail.txt --make-bed --out ./QC/PSYchip/"$PSYchip"_QCed
+
+## R
+#!/usr/bin/env Rscript
+# Checks sex discrepancies
+args <- commandArgs(trailingOnly = TRUE)
+prefix <- args[1]
+
+data <- read.table(paste0("logs/", prefix, "check_XY.sexcheck"), header = TRUE)
+
+# Plot
+pdf(paste0("logs/", prefix, "_sexcheck.pdf"))
+dotchart(data$F, labels = data$IID, xlab = "X-chromosome heterozygosity (F)")
+dev.off()
+
+# Identify problematic samples (PROBLEM status and SNPSEX != 0)
+problem_samples <- subset(data, STATUS == "PROBLEM" & SNPSEX != 0)[, c(1, 2)]
+
+if (nrow(problem_samples) > 0) {
+  write.table(problem_samples, paste0("logs/", prefix, "_sexcheck_problem_samples.txt"), 
+              col.names = FALSE, row.names = FALSE, quote = FALSE)
+  cat("Sex discrepancies detected. Saved to logs/", prefix, "_sexcheck_problem_samples.txt\n", sep = "")
+} else {
+  cat("No sex discrepancies found.\n")
+}
+
+# GSA1
+plink --bfile ./QC/GSA1/"$GSA1"_semhet --check-sex --out ./QC/GSA1/check_XY
+grep PROBLEM ./QC/GSA1/check_XY.sexcheck | awk '{print $1, $2}' > ./QC/GSA1/check_sex_fail.txt
+plink --bfile ./QC/GSA1/"$GSA1"_semhet --remove ./QC/GSA1/check_sex_fail.txt --make-bed --out ./QC/GSA1/"$GSA1"_QCed
+
+# GSA2
+plink --bfile ./QC/GSA2/"$GSA2"_semhet --check-sex --out ./QC/GSA2/check_XY
+grep PROBLEM ./QC/GSA2/check_XY.sexcheck | awk '{print $1, $2}' > ./QC/GSA2/check_sex_fail.txt
+plink --bfile ./QC/GSA2/"$GSA2"_semhet --remove ./QC/GSA2/check_sex_fail.txt --make-bed --out ./QC/GSA2/"$GSA2"_QCed
+
+# Smookescreen
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_semhet --check-sex --out ./QC/Smokescreen/check_XY
+grep PROBLEM ./QC/Smokescreen/check_XY.sexcheck | awk '{print $1, $2}' > ./QC/Smokescreen/check_sex_fail.txt
+plink --bfile ./QC/Smokescreen/"$Smokescreen"_semhet --remove ./QC/Smokescreen/check_sex_fail.txt --make-bed --out ./QC/Smokescreen/"$Smokescreen"_QCed
+
+############### MERGE GSA1 + GSA2 ###########################
+
+# SNV list:
+plink --bfile ./QC/GSA1/"$GSA1"_QCed --list-duplicate-vars --out ./QC/GSA_merged/"$GSA1"_new
+plink --bfile ./QC/GSA1/"$GSA1"_QCed --exclude ./QC/GSA_merged/"$GSA1"_new.dupvar --make-bed --out ./QC/GSA_merged/"$GSA1"_new_nodup
+plink --bfile ./QC/GSA_merged/"$GSA1"_new_nodup --write-snplist --out ./QC/GSA_merged/"$GSA1"_new_nodup
+sort -o ./QC/GSA_merged/"$GSA1"_new_nodup.snplist ./QC/GSA_merged/"$GSA1"_new_nodup.snplist
+
+plink --bfile ./QC/GSA2/"$GSA2"_QCed --list-duplicate-vars --out ./QC/GSA_merged/"$GSA2"_new  # Identify duplicate variants in dataset 1
+plink --bfile ./QC/GSA2/"$GSA2"_QCed --exclude ./QC/GSA_merged/"$GSA2"_new.dupvar --make-bed --out ./QC/GSA_merged/"$GSA2"_new_nodup  # Exclude duplicate variants
+plink --bfile ./QC/GSA_merged/"$GSA2"_new_nodup --write-snplist --out ./QC/GSA_merged/"$GSA2"_new_nodup  # Write the list of SNPs
+sort -o ./QC/GSA_merged/"$GSA2"_new_nodup.snplist ./QC/GSA_merged/"$GSA2"_new_nodup.snplist  # Sort the SNP list
+
+# Common SNVs between datasets:
+comm -12 ./QC/GSA_merged/"$GSA1"_new_nodup.snplist ./QC/GSA_merged/"$GSA2"_new_nodup.snplist > GSA_merged.snplist
+plink --bfile ./QC/GSA_merged/"$GSA1"_new_nodup --extract GSA_merged.snplist --make-bed --out ./QC/GSA_merged/"$GSA1"_new_nodup_common
+plink --bfile ./QC/GSA_merged/"$GSA2"_new_nodup --extract GSA_merged.snplist --make-bed --out ./QC/GSA_merged/"$GSA2"_new_nodup_common
+
+# FID update:
+awk '{print $1, $2, "1", $2}' ./QC/GSA_merged/"$GSA2"_new_nodup_common.fam > ./QC/GSA_merged/"$GSA2"_new_updatefids.txt
+plink --bfile ./QC/GSA_merged/"$GSA2"_new_nodup_common --update-ids ./QC/GSA_merged/"$GSA2"_new_updatefids.txt --make-bed --out ./QC/GSA_merged/"$GSA2"_new_nodup_common_fid1
+plink --bfile ./QC/GSA_merged/"$GSA2"_new_nodup_common --bmerge ./QC/GSA_merged/"$GSA2"_new_nodup_common_fid1 --make-bed --out ./QC/GSA_merged/GSA_merged
+
+################# Quality Control 2 ######################
+
+./preimputation_qc.sh GSA_merged GSA_merged_QCed
+
 
