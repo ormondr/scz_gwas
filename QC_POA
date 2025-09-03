@@ -389,4 +389,6 @@ plink --bfile ./QC/GSA_merged/"$GSA2"_new_nodup_common --bmerge ./QC/GSA_merged/
 
 ./preimputation_qc.sh GSA_merged GSA_merged_QCed
 
+### tentei adaptar esse script mas está dando erro
+
 
