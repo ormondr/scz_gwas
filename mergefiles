@@ -1,0 +1,96 @@
+dataset1=/mnt/rosalind_1/Rafaella/julia_lagc_meta/post_imputation_Rovaris/Rovaris_Final_INFO_PLINK_QC_snp/output_INFO_PLINK_QC_snp_1
+dataset2=/mnt/rosalind_1/Rafaella/julia_lagc_meta/post_imputation_Rovaris/Rovaris_Final_INFO_PLINK_QC_snp/output_INFO_PLINK_QC_snp_2
+dataset3=/mnt/rosalind_1/Rafaella/julia_lagc_meta/post_imputation_Rovaris/Rovaris_Final_INFO_PLINK_QC_snp/output_INFO_PLINK_QC_snp_3
+dataset4=/mnt/rosalind_1/Rafaella/julia_lagc_meta/BHRCS_GAPi/gsa_psych_omini_cleaned_pheno_final
+dataset5=/mnt/rosalind_1/Lagc_scz/GWAS_GENESIS/EUGEI/imputed_EUGEI_final_prune
+dataset1_new=/mnt/rosalind_1/Rafaella/lagc_scz_merge/output_INFO_PLINK_QC_snp_1_new
+dataset2_new=/mnt/rosalind_1/Rafaella/lagc_scz_merge/output_INFO_PLINK_QC_snp_2_new
+dataset3_new=/mnt/rosalind_1/Rafaella/lagc_scz_merge/output_INFO_PLINK_QC_snp_3_new
+dataset4_new=/mnt/rosalind_1/Rafaella/lagc_scz_merge/gsa_psych_omini_cleaned_pheno_final_new
+dataset5_new=/mnt/rosalind_1/Rafaella/lagc_scz_merge/imputed_EUGEI_final_prune_new
+dataset_path=/mnt/rosalind_1/Rafaella/lagc_scz_merge
+dataset_merged=/mnt/rosalind_1/Rafaella/scz_brazilian_cohorts
+
+############### Merge 1 and 2 ###############
+# Step 1: Remove duplicate variants from each dataset and generate a list of SNPs
+plink --bfile "$dataset1" --list-duplicate-vars --out "$dataset1_new"  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset1" --exclude "$dataset1_new".dupvar --make-bed --out "$dataset1_new"_nodup  # Exclude duplicate variants
+plink --bfile "$dataset1_new"_nodup --write-snplist --out "$dataset1_new"_nodup  # Write the list of SNPs
+sort -o "$dataset1_new"_nodup.snplist "$dataset1_new"_nodup.snplist  # Sort the SNP list
+
+plink --bfile "$dataset2" --list-duplicate-vars --out "$dataset2_new"  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset2" --exclude "$dataset2_new".dupvar --make-bed --out "$dataset2_new"_nodup  # Exclude duplicate variants
+plink --bfile "$dataset2_new"_nodup --write-snplist --out "$dataset2_new"_nodup  # Write the list of SNPs
+sort -o "$dataset2_new"_nodup.snplist "$dataset2_new"_nodup.snplist  # Sort the SNP list
+
+# Step 2: Identify common SNPs across all datasets
+comm -12 "$dataset1_new"_nodup.snplist "$dataset2_new"_nodup.snplist > "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist  # Find common SNPs across all datasets
+
+# Step 3: Filter each dataset to include only the common SNPs
+plink --bfile "$dataset1_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist --make-bed --out "$dataset1_new"_nodup_common
+plink --bfile "$dataset2_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist --make-bed --out "$dataset2_new"_nodup_common
+
+# Step 4: Update FID (Family IDs) to make sure it can handle duplicated IIDs
+awk '{print $1, $2, "1", $2}' "$dataset2_new"_nodup_common.fam > "$dataset2_new"_updatefids.txt  # Update FID for dataset 2
+plink --bfile "$dataset2_new"_nodup_common --update-ids "$dataset2_new"_updatefids.txt --make-bed --out "$dataset2_new"_nodup_common_fid1
+
+# Step 5: Merge all datasets sequentially
+plink --bfile "$dataset1_new"_nodup_common --bmerge "$dataset2_new"_nodup_common_fid1 --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2  # Merge dataset 1 and 2
+#### nao entendi o que ta errado #####
+
+############### Merge 3 and 4 ###############
+# Step 1: Remove duplicate variants from each dataset and generate a list of SNPs
+plink --bfile "$dataset1" --list-duplicate-vars --out "$dataset1_new"  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset1" --exclude "$dataset1_new".dupvar --make-bed --out "$dataset1_new"_nodup  # Exclude duplicate variants
+plink --bfile "$dataset1_new"_nodup --write-snplist --out "$dataset1_new"_nodup  # Write the list of SNPs
+sort -o "$dataset1_new"_nodup.snplist "$dataset1_new"_nodup.snplist  # Sort the SNP list
+
+plink --bfile "$dataset2" --list-duplicate-vars --out "$dataset2_new"  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset2" --exclude "$dataset2_new".dupvar --make-bed --out "$dataset2_new"_nodup  # Exclude duplicate variants
+plink --bfile "$dataset2_new"_nodup --write-snplist --out "$dataset2_new"_nodup  # Write the list of SNPs
+sort -o "$dataset2_new"_nodup.snplist "$dataset2_new"_nodup.snplist  # Sort the SNP list
+
+# Step 2: Identify common SNPs across all datasets
+comm -12 "$dataset1_new"_nodup.snplist "$dataset2_new"_nodup.snplist > "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist  # Find common SNPs across all datasets
+
+# Step 3: Filter each dataset to include only the common SNPs
+plink --bfile "$dataset1_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist --make-bed --out "$dataset1_new"_nodup_common
+plink --bfile "$dataset2_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist --make-bed --out "$dataset2_new"_nodup_common
+
+# Step 4: Update FID (Family IDs) to make sure it can handle duplicated IIDs
+awk '{print $1, $2, "1", $2}' "$dataset2_new"_nodup_common.fam > "$dataset2_new"_updatefids.txt  # Update FID for dataset 2
+plink --bfile "$dataset2_new"_nodup_common --update-ids "$dataset2_new"_updatefids.txt --make-bed --out "$dataset2_new"_nodup_common_fid1
+
+# Step 5: Merge all datasets sequentially
+plink --bfile "$dataset1_new"_nodup_common --bmerge "$dataset2_new"_nodup_common_fid1 --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2  # Merge dataset 1 and 2
+######### nao entendi o que deu errado ################
+
+############### Merge 3 and 4 ###############
+# Step 1: Remove duplicate variants from each dataset and generate a list of SNPs
+plink --bfile "$dataset3" --list-duplicate-vars --out "$dataset3_new"  
+plink --bfile "$dataset3" --exclude "$dataset3_new".dupvar --make-bed --out "$dataset3_new"_nodup  
+plink --bfile "$dataset3_new"_nodup --write-snplist --out "$dataset3_new"_nodup  
+sort -o "$dataset3_new"_nodup.snplist "$dataset3_new"_nodup.snplist  
+
+plink --bfile "$dataset4" --list-duplicate-vars --out "$dataset4_new"  
+plink --bfile "$dataset4" --exclude "$dataset4_new".dupvar --make-bed --out "$dataset4_new"_nodup  
+plink --bfile "$dataset4_new"_nodup --write-snplist --out "$dataset4_new"_nodup  
+sort -o "$dataset4_new"_nodup.snplist "$dataset4_new"_nodup.snplist  
+
+# Step 2: Identify common SNPs across both datasets
+comm -12 "$dataset3_new"_nodup.snplist "$dataset4_new"_nodup.snplist > "$dataset_path"/scz_brazil_intermedmerge_3_4.snplist  
+
+# Step 3: Filter each dataset to include only the common SNPs
+plink --bfile "$dataset3_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_3_4.snplist --make-bed --out "$dataset3_new"_nodup_common
+plink --bfile "$dataset4_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_3_4.snplist --make-bed --out "$dataset4_new"_nodup_common
+
+# Step 4: Update FID for dataset 4
+awk '{print $1, $2, "1", $2}' "$dataset4_new"_nodup_common.fam > "$dataset4_new"_updatefids.txt  
+plink --bfile "$dataset4_new"_nodup_common --update-ids "$dataset4_new"_updatefids.txt --make-bed --out "$dataset4_new"_nodup_common_fid1
+
+# Step 5: Merge datasets 3 and 4
+plink --bfile "$dataset3_new"_nodup_common --bmerge "$dataset4_new"_nodup_common_fid1 --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_3_4
+
+############### Merge 1_2 and 3_4 ###############
+
+############### Merge 1_2_3_4 and 5 ###############
