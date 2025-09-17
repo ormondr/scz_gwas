@@ -34,36 +34,34 @@ plink --bfile "$dataset2_new"_nodup --extract "$dataset_path"/scz_brazil_interme
 awk '{print $1, $2, "1", $2}' "$dataset2_new"_nodup_common.fam > "$dataset2_new"_updatefids.txt  # Update FID for dataset 2
 plink --bfile "$dataset2_new"_nodup_common --update-ids "$dataset2_new"_updatefids.txt --make-bed --out "$dataset2_new"_nodup_common_fid1
 
-# Step 5: Merge all datasets sequentially
-plink --bfile "$dataset1_new"_nodup_common --bmerge "$dataset2_new"_nodup_common_fid1 --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2  # Merge dataset 1 and 2
-#### nao entendi o que ta errado #####
+# Step 5: Biallelic only
+plink --bfile "$dataset1_new"_nodup_common --biallelic-only strict --make-bed --out "$dataset1_new"_nodup_common_biallelic
+plink --bfile "$dataset2_new"_nodup_common_fid1 --biallelic-only strict --make-bed --out "$dataset2_new"_nodup_common_fid1_biallelic
 
-############### Merge 3 and 4 ###############
-# Step 1: Remove duplicate variants from each dataset and generate a list of SNPs
-plink --bfile "$dataset1" --list-duplicate-vars --out "$dataset1_new"  # Identify duplicate variants in dataset 1
-plink --bfile "$dataset1" --exclude "$dataset1_new".dupvar --make-bed --out "$dataset1_new"_nodup  # Exclude duplicate variants
-plink --bfile "$dataset1_new"_nodup --write-snplist --out "$dataset1_new"_nodup  # Write the list of SNPs
-sort -o "$dataset1_new"_nodup.snplist "$dataset1_new"_nodup.snplist  # Sort the SNP list
+# Step 6: Trying to do the merge
+plink --bfile "$dataset1_new"_nodup_common_biallelic \
+      --bmerge "$dataset2_new"_nodup_common_fid1_biallelic \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2
+### didn't worked, 143 potential multialelic variants
 
-plink --bfile "$dataset2" --list-duplicate-vars --out "$dataset2_new"  # Identify duplicate variants in dataset 1
-plink --bfile "$dataset2" --exclude "$dataset2_new".dupvar --make-bed --out "$dataset2_new"_nodup  # Exclude duplicate variants
-plink --bfile "$dataset2_new"_nodup --write-snplist --out "$dataset2_new"_nodup  # Write the list of SNPs
-sort -o "$dataset2_new"_nodup.snplist "$dataset2_new"_nodup.snplist  # Sort the SNP list
+# Step 7: excluding variants is telling as multiallelic
+plink --bfile "$dataset1_new"_nodup_common_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2-merge.missnp \
+      --make-bed \
+      --out "$dataset1_new"_nodup_common_biallelic_fix
 
-# Step 2: Identify common SNPs across all datasets
-comm -12 "$dataset1_new"_nodup.snplist "$dataset2_new"_nodup.snplist > "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist  # Find common SNPs across all datasets
+plink --bfile "$dataset2_new"_nodup_common_fid1_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2-merge.missnp \
+      --make-bed \
+      --out "$dataset2_new"_nodup_common_fid1_biallelic_fix
 
-# Step 3: Filter each dataset to include only the common SNPs
-plink --bfile "$dataset1_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist --make-bed --out "$dataset1_new"_nodup_common
-plink --bfile "$dataset2_new"_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_1_2.snplist --make-bed --out "$dataset2_new"_nodup_common
+# Step 8: Merge all datasets sequentially
+plink --bfile "$dataset1_new"_nodup_common_biallelic_fix \
+      --bmerge "$dataset2_new"_nodup_common_fid1_biallelic_fix \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2
 
-# Step 4: Update FID (Family IDs) to make sure it can handle duplicated IIDs
-awk '{print $1, $2, "1", $2}' "$dataset2_new"_nodup_common.fam > "$dataset2_new"_updatefids.txt  # Update FID for dataset 2
-plink --bfile "$dataset2_new"_nodup_common --update-ids "$dataset2_new"_updatefids.txt --make-bed --out "$dataset2_new"_nodup_common_fid1
-
-# Step 5: Merge all datasets sequentially
-plink --bfile "$dataset1_new"_nodup_common --bmerge "$dataset2_new"_nodup_common_fid1 --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2  # Merge dataset 1 and 2
-######### nao entendi o que deu errado ################
 
 ############### Merge 3 and 4 ###############
 # Step 1: Remove duplicate variants from each dataset and generate a list of SNPs
@@ -88,9 +86,133 @@ plink --bfile "$dataset4_new"_nodup --extract "$dataset_path"/scz_brazil_interme
 awk '{print $1, $2, "1", $2}' "$dataset4_new"_nodup_common.fam > "$dataset4_new"_updatefids.txt  
 plink --bfile "$dataset4_new"_nodup_common --update-ids "$dataset4_new"_updatefids.txt --make-bed --out "$dataset4_new"_nodup_common_fid1
 
-# Step 5: Merge datasets 3 and 4
-plink --bfile "$dataset3_new"_nodup_common --bmerge "$dataset4_new"_nodup_common_fid1 --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_3_4
+# Step 5: Biallelic only
+plink --bfile "$dataset3_new"_nodup_common --biallelic-only strict --make-bed --out "$dataset3_new"_nodup_common_biallelic
+plink --bfile "$dataset4_new"_nodup_common_fid1 --biallelic-only strict --make-bed --out "$dataset4_new"_nodup_common_fid1_biallelic
+
+# Step 6: Trying to do the merge
+plink --bfile "$dataset3_new"_nodup_common_biallelic \
+      --bmerge "$dataset4_new"_nodup_common_fid1_biallelic \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_3_4
+### didn't worked, 79 potential multialelic variants
+
+# Step 7: excluding variants is telling as multiallelic
+plink --bfile "$dataset3_new"_nodup_common_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_3_4-merge.missnp \
+      --make-bed \
+      --out "$dataset3_new"_nodup_common_biallelic_fix
+
+plink --bfile "$dataset4_new"_nodup_common_fid1_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_3_4-merge.missnp \
+      --make-bed \
+      --out "$dataset4_new"_nodup_common_fid1_biallelic_fix
+
+# Step 8: Merge all datasets sequentially
+plink --bfile "$dataset3_new"_nodup_common_biallelic_fix \
+      --bmerge "$dataset4_new"_nodup_common_fid1_biallelic_fix \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_3_4
 
 ############### Merge 1_2 and 3_4 ###############
+# Step 1: Remove duplicate variants from each dataset and generate a list of SNPs
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2 --list-duplicate-vars --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2 --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2_new.dupvar --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup  # Exclude duplicate variants
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup --write-snplist --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup  # Write the list of SNPs
+sort -o "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup.snplist "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup.snplist  # Sort the SNP list
+
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4 --list-duplicate-vars --out  "$dataset_path"/scz_brazil_intermedmerge_3_4_new  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4 --exclude "$dataset_path"/scz_brazil_intermedmerge_3_4_new.dupvar --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup  # Exclude duplicate variants
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup --write-snplist --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup  # Write the list of SNPs
+sort -o "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist  # Sort the SNP list
+
+# Step 2: Identify common SNPs across all datasets
+comm -12 "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup.snplist "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist > "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4.snplist  # Find common SNPs across all datasets
+
+# Step 3: Filter each dataset to include only the common SNPs
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common
+
+# Step 4: Update FID (Family IDs) to make sure it can handle duplicated IIDs
+awk '{print $1, $2, "1", $2}' "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common.fam > "$dataset_path"/scz_brazil_intermedmerge_3_4_new_updatefids.txt  # Update FID for dataset 2
+plink --bfile  "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common --update-ids "$dataset_path"/scz_brazil_intermedmerge_3_4_new_updatefids.txt  --make-bed --out  "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1
+
+# Step 5: Biallelic only
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common --biallelic-only strict --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1 --biallelic-only strict --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1_biallelic
+
+# Step 6: Trying to do the merge
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic \
+      --bmerge "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1_biallelic \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4
+### didn't worked, 143 potential multialelic variants
+
+# Step 7: excluding variants is telling as multiallelic
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4-merge.missnp \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic_fix
+
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4-merge.missnp \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_biallelic_fix
+
+# Step 8: Merge all datasets sequentially
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic_fix \
+      --bmerge "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_biallelic_fix \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4
 
 ############### Merge 1_2_3_4 and 5 ###############
+
+# Step 1: Remove duplicate variants from each dataset and generate a list of SNPs
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4 --list-duplicate-vars --out "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4_new  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4 --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4_new.dupvar --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup  # Exclude duplicate variants
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4_new_nodup --write-snplist --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup  # Write the list of SNPs
+sort -o "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4_new_nodup.snplist "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup.snplist  # Sort the SNP list
+
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4 --list-duplicate-vars --out  "$dataset_path"/scz_brazil_intermedmerge_3_4_new  # Identify duplicate variants in dataset 1
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4 --exclude "$dataset_path"/scz_brazil_intermedmerge_3_4_new.dupvar --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup  # Exclude duplicate variants
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup --write-snplist --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup  # Write the list of SNPs
+sort -o "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist  # Sort the SNP list
+
+# Step 2: Identify common SNPs across all datasets
+comm -12 "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup.snplist "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist > "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4.snplist  # Find common SNPs across all datasets
+
+# Step 3: Filter each dataset to include only the common SNPs
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup --extract "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup.snplist --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common
+
+# Step 4: Update FID (Family IDs) to make sure it can handle duplicated IIDs
+awk '{print $1, $2, "1", $2}' "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common.fam > "$dataset_path"/scz_brazil_intermedmerge_3_4_new_updatefids.txt  # Update FID for dataset 2
+plink --bfile  "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common --update-ids "$dataset_path"/scz_brazil_intermedmerge_3_4_new_updatefids.txt  --make-bed --out  "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1
+
+# Step 5: Biallelic only
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common --biallelic-only strict --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1 --biallelic-only strict --make-bed --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1_biallelic
+
+# Step 6: Trying to do the merge
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic \
+      --bmerge "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_fid1_biallelic \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4
+### didn't worked, 143 potential multialelic variants
+
+# Step 7: excluding variants is telling as multiallelic
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4-merge.missnp \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic_fix
+
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_biallelic \
+      --exclude "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4-merge.missnp \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_biallelic_fix
+
+# Step 8: Merge all datasets sequentially
+plink --bfile "$dataset_path"/scz_brazil_intermedmerge_1_2_new_nodup_nodup_common_biallelic_fix \
+      --bmerge "$dataset_path"/scz_brazil_intermedmerge_3_4_new_nodup_nodup_common_biallelic_fix \
+      --make-bed \
+      --out "$dataset_path"/scz_brazil_intermedmerge_1_2_3_4
