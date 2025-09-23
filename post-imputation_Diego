@@ -1,0 +1,96 @@
+### Script made by Julia Arendt
+
+
+
+#!/bin/bash
+
+pwd #home/julia.arendt
+
+## 1. Download TOPMed data (it lasted ~8hours)
+
+### Batch 1
+#mkdir post_imputation_1
+cd post_imputation_1
+curl -sL https://imputation.biodatacatalyst.nhlbi.nih.gov/get/1754524/943b4df598e308f9efaa75c2e652b0efaacd09c6e130be8fb39d97a03a347915 | bash
+
+### Batch 2
+#mkdir post_imputation_2
+cd post_imputation_2
+curl -sL https://imputation.biodatacatalyst.nhlbi.nih.gov/get/1754476/93c56a67aa1882b891ea310b8c42042b0cd0a9a30638eb081943f5d0cece43a7 | bash
+
+### Batch 3
+#mkdir post_imputation_3
+cd post_imputation_3
+curl -sL https://imputation.biodatacatalyst.nhlbi.nih.gov/get/1754596/8f275d606307bfe010e5a6e454c7d46bac44322ad2bb0d9517ccb7cf2adad43e | bash
+
+
+## 2. Unzip/extract chromosome files (it lasted ~30 min/batch)
+
+### Batch 1
+cd post_imputation_1
+#mkdir output_1
+output_dir="output_1"
+for i in {1..22} X; do    7z e chr_"$i".zip -p'ttiDXlG07K5Akb' -o"$output_dir"; done
+
+### Batch 2
+cd post_imputation_2
+#mkdir output_2
+output_dir="output_2"
+for i in {1..22} X; do    7z e chr_"$i".zip -p'zuZSZ-50dOlVxZ' -o"$output_dir"; done #parei aqui
+
+### Batch 3
+cd post_imputation_3
+#mkdir output_3
+output_dir="output_3"
+for i in {1..22} X; do    7z e chr_"$i".zip -p'H9]ODEy4LpflLh' -o"$output_dir"; done
+
+## 3. Filter
+
+### Batch 1
+cd post_imputation_1/output_1
+find ./ -name "*.dose.vcf.gz" | sort -V  | parallel -j 5 'bcftools view -i "R2>.8" -Oz -o {.}.filtered_r2_08.vcf.gz {}'
+find ./ -name "*.filtered_r2_08.vcf.gz" | sort -V | xargs bcftools concat -Oz -o output_INFO_1
+
+### Batch 2
+cd post_imputation_2/output_2
+find ./ -name "*.dose.vcf.gz" | sort -V  | parallel -j 5 'bcftools view -i "R2>.8" -Oz -o {.}.filtered_r2_08.vcf.gz {}'
+find ./ -name "*.filtered_r2_08.vcf.gz" | sort -V | xargs bcftools concat -Oz -o output_INFO_2
+
+### Batch 3
+cd post_imputation_3/cd output_3
+find ./ -name "*.dose.vcf.gz" | sort -V  | parallel -j 5 'bcftools view -i "R2>.8" -Oz -o {.}.filtered_r2_08.vcf.gz {}'
+find ./ -name "*.filtered_r2_08.vcf.gz" | sort -V | xargs bcftools concat -Oz -o output_INFO_3
+
+## 4. VCF to PLINK format:
+
+### Batch 1
+cd post_imputation_1/output_1
+bcftools index -t output_info_1
+plink --vcf output_INFO_1 --make-bed --out output_INFO_PLINK_1
+
+### Batch 2
+cd post_imputation_2/output_2
+bcftools index -t output_INFO_2
+plink --vcf output_INFO_2 --make-bed --out output_INFO_PLINK_2
+
+### Batch 3
+cd post_imputation_3/output_3
+bcftools index -t output_INFO_3
+plink --vcf output_INFO_3 --make-bed --out output_INFO_PLINK_3
+
+## 5. Quality Control 3
+
+### Batch 1
+cd post_imputation_1/output_1
+plink --bfile output_INFO_PLINK_1 --maf 0.01 --geno 0.02 -hwe 1e-10 --make-bed --out output_INFO_PLINK_QC_1
+plink --bfile output_INFO_PLINK_QC_1 --snps-only --make-bed --out output_INFO_PLINK_QC_snp_1
+
+### Batch 2
+cd post_imputation_2/output_2
+plink --bfile output_INFO_PLINK_2 --maf 0.01 --geno 0.02 -hwe 1e-10 --make-bed --out output_INFO_PLINK_QC_2
+plink --bfile output_INFO_PLINK_QC_2 --snps-only --make-bed --out output_INFO_PLINK_QC_snp_2
+
+### Batch 3
+cd post_imputation_3/output_3
+plink --bfile output_INFO_PLINK_3 --maf 0.01 --geno 0.02 -hwe 1e-10 --make-bed --out output_INFO_PLINK_QC_3
+plink --bfile output_INFO_PLINK_QC_3 --snps-only --make-bed --out output_INFO_PLINK_QC_snp_3
